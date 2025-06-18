@@ -6,10 +6,11 @@ import { loginSuccess } from '../../redux/features/auth/authSlice';
 import toast from 'react-hot-toast';
 
 const Login = () => {
-  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState({ email: "", password: "" }); // For tracking validation errors
+  const [errors, setErrors] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false); // ✅ Loading state
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -17,7 +18,6 @@ const Login = () => {
     let isValid = true;
     const newErrors = { email: "", password: "" };
 
-    // Validate Email
     if (!email) {
       newErrors.email = "Email is required.";
       isValid = false;
@@ -26,7 +26,6 @@ const Login = () => {
       isValid = false;
     }
 
-    // Validate Password
     if (!password) {
       newErrors.password = "Password is required.";
       isValid = false;
@@ -35,7 +34,7 @@ const Login = () => {
       isValid = false;
     }
 
-    setErrors(newErrors); // Set errors in state
+    setErrors(newErrors);
     return isValid;
   };
 
@@ -44,39 +43,41 @@ const Login = () => {
 
     if (!validateForm()) return;
 
+    setLoading(true); // ✅ Start loading
+
     try {
-        const response = await api.post('/auth/login', { email, password });
-        const { user, token, role } = response.data;
+      const response = await api.post('/auth/login', { email, password });
+      const { user, token, role } = response.data;
 
-        localStorage.setItem('token', token);
-        dispatch(loginSuccess({ user, token, role })); // Pass full user object
+      localStorage.setItem('token', token);
+      dispatch(loginSuccess({ user, token, role }));
 
-        toast.success('Login Successful');
-        switch (role) {
-            case 'admin':
-                navigate('/');
-                break;
-            case 'teacher':
-                navigate('/students/list');
-                break;
-            case 'account':
-                navigate('/fees');
-                break;
-            default:
-                navigate('/login');
-        }
+      toast.success('Login Successful');
+      switch (role) {
+        case 'admin':
+          navigate('/');
+          break;
+        case 'teacher':
+          navigate('/students/list');
+          break;
+        case 'account':
+          navigate('/fees');
+          break;
+        default:
+          navigate('/login');
+      }
     } catch (error) {
-        toast.error(error.response?.data?.message || 'Something went wrong.');
+      toast.error(error.response?.data?.message || 'Something went wrong.');
+    } finally {
+      setLoading(false); // ✅ Stop loading
     }
-};
-
+  };
 
   return (
-
     <div className="flex overflow-hidden flex-col justify-center items-center px-20 py-40 bg-zinc-50 max-md:px-5 max-md:py-24">
       <div className="flex flex-col max-w-full w-[549px]">
         <h1 className="gap-4 self-stretch text-4xl font-semibold text-center text-neutral-600 max-md:max-w-full">
-          Welcome, Log into you account
+          Welcome, Log into your account
         </h1>
         <div className="flex overflow-hidden flex-col justify-center items-center self-center px-14 py-16 mt-14 max-w-full text-sm font-medium bg-white w-[512px] max-md:px-5 max-md:mt-10">
           <div className="flex flex-col max-w-full w-[500px]">
@@ -91,12 +92,12 @@ const Login = () => {
                   id="email"
                   name="email"
                   placeholder="Enter Email Address"
-                  className="p-3.5 w-full rounded border-solid border-[0.5px] border-neutral-400 text-zinc-500 max-md:pr-5"
-                  required
+                  className="p-3.5 w-full rounded border border-neutral-400 text-zinc-500"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
-                {errors.email && <span className="error-message">{errors.email}</span>}
+                {errors.email && <span className="text-red-500 text-sm mt-1">{errors.email}</span>}
               </div>
               <div className="flex flex-col">
                 <label htmlFor="password" className="sr-only">Enter Password</label>
@@ -105,27 +106,51 @@ const Login = () => {
                   id="password"
                   name="password"
                   placeholder="Enter Password"
-                  className="p-3.5 w-full rounded border-solid border-[0.5px] border-neutral-400 text-zinc-500 max-md:pr-5"
+                  className="p-3.5 w-full rounded border border-neutral-400 text-zinc-500"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                {errors.password && <span className="error-message">{errors.password}</span>}
+                {errors.password && <span className="text-red-500 text-sm mt-1">{errors.password}</span>}
               </div>
+
               <button
                 type="submit"
-                className="dark-btn"
+                className="dark-btn flex justify-center items-center"
+                disabled={loading}
               >
-                Login
+                {loading ? (
+                  <>
+                    <svg
+                      className="animate-spin h-4 w-4 mr-2 text-white"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      />
+                    </svg>
+                    Logging in...
+                  </>
+                ) : (
+                  'Login'
+                )}
               </button>
             </form>
-
           </div>
         </div>
       </div>
     </div>
-
-
   );
 };
 
