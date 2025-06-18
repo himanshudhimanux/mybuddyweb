@@ -24,7 +24,7 @@ export const fetchCourses = createAsyncThunk('batches/fetchCourses', async () =>
 // GOOD: only return the batch list
 export const fetchBatches = createAsyncThunk('batches/fetchBatches', async () => {
   const response = await api.get('/batches');
-  return response.data.data; // ✅ assuming response = { success, message, data: [...] }
+  return response.data; // ✅ assuming response = { success, message, data: [...] }
 });
 
 
