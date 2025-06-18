@@ -32,7 +32,7 @@ export const updateStudent = createAsyncThunk(
     "students/updateStudent",
     async ({ id, updatedData }, { rejectWithValue }) => {
         try {
-            const response = await api.put(`/student/${id}`, updatedData, {
+            const response = await api.put(`/update/student/${id}`, updatedData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
             return response.data.student; // Return the updated student
@@ -47,7 +47,7 @@ export const deleteStudent = createAsyncThunk(
     "students/deleteStudent",
     async (id, { rejectWithValue }) => {
         try {
-            await api.delete(`/student/${id}`);
+            await api.delete(`/delete/student/${id}`);
             return id; // Return the ID of the deleted student
         } catch (error) {
             return rejectWithValue(error.response.data.message || "Failed to delete student");

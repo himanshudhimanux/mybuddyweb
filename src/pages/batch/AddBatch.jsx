@@ -1,14 +1,15 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+
 import {
   fetchSessions,
   fetchLocations,
-  fetchCourses,
   setSessionYear,
   setLocationId,
-  setCourseId,
+  // setCourseId,
   setBatchName,
-  createBatch
+  createBatch,
+  clearStatus
 } from '../../redux/features/batch/batchSlice';
 import toast from 'react-hot-toast';
 
@@ -17,19 +18,33 @@ const AddBatch = () => {
   const {
     sessions,
     locations,
-    courses,
+    // courses,
     sessionYear,
     locationId,
-    courseId, // remains for UI even if unused in backend
+    // courseId, // remains for UI even if unused in backend
     batchName,
-    loading
+    loading,
+    status
   } = useSelector(state => state.batches);
 
   useEffect(() => {
     dispatch(fetchSessions());
     dispatch(fetchLocations());
-    dispatch(fetchCourses());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!loading && status === 'success') {
+      toast.success('Batch created successfully!');
+      dispatch(clearStatus());
+
+      // Reset form fields
+      dispatch(setBatchName(''));
+      dispatch(setSessionYear(''));
+      dispatch(setLocationId(''));
+      // dispatch(setCourseId('')); // if course is used
+    }
+  }, [status, loading, dispatch]);
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -97,7 +112,7 @@ const AddBatch = () => {
         </div>
 
         {/* Optional course field shown in UI only */}
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <label htmlFor="courseId" className="block text-gray-700 font-medium mb-2">Course (Optional)</label>
           <select
             id="courseId"
@@ -110,7 +125,7 @@ const AddBatch = () => {
               <option key={course._id} value={course._id}>{course.name}</option>
             ))}
           </select>
-        </div>
+        </div> */}
 
         <div className="flex justify-center">
           <button

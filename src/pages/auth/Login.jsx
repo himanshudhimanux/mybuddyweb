@@ -6,6 +6,7 @@ import { loginSuccess } from '../../redux/features/auth/authSlice';
 import toast from 'react-hot-toast';
 
 const Login = () => {
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({ email: "", password: "" }); // For tracking validation errors

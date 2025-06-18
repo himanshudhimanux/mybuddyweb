@@ -58,11 +58,6 @@ const Sidebar = () => {
             <span className="ml-2">Class Sessions</span>
           </Link>
 
-          <Link to="/class-session/calendar" className="flex items-center p-2 custom-hover rounded">
-            <FaRegBuilding />
-            <span className="ml-2">Sessions View</span>
-          </Link>
-
           <Link to="/institutes/list" className="flex items-center p-2 custom-hover rounded">
             <FaRegBuilding />
             <span className="ml-2">Centre/Institutes</span>

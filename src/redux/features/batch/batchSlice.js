@@ -21,10 +21,10 @@ export const fetchCourses = createAsyncThunk('batches/fetchCourses', async () =>
 });
 
 
-// Async thunk for fetching batches
+// GOOD: only return the batch list
 export const fetchBatches = createAsyncThunk('batches/fetchBatches', async () => {
   const response = await api.get('/batches');
-  return response.data;
+  return response.data.data; // ✅ assuming response = { success, message, data: [...] }
 });
 
 
@@ -55,6 +55,7 @@ const batchSlice = createSlice({
     locationId: null,
     courseId: null,
     batchName: '',
+    status: null,
   },
   reducers: {
     setSessionYear: (state, action) => {
@@ -69,6 +70,9 @@ const batchSlice = createSlice({
     setBatchName: (state, action) => {
       state.batchName = action.payload;
     },
+      clearStatus: (state) => {
+    state.status = null;
+  }
   },
   extraReducers: (builder) => {
     builder
@@ -113,21 +117,22 @@ const batchSlice = createSlice({
       })
       .addCase(fetchBatches.fulfilled, (state, action) => {
         state.loading = false;
-        state.batches = action.payload;
+        state.batches = action.payload; // ✅ payload is now an array
       })
       .addCase(fetchBatches.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       })
 
-      .addCase(createBatch.fulfilled, (state, action) => {
-        state.batches.push(action.payload.batch);
-      })
+    .addCase(createBatch.fulfilled, (state, action) => {
+      state.batches.push(action.payload.batch);
+      state.status = 'success'; // ✅ Set status for toast tracking
+    })
       .addCase(deleteBatch.fulfilled, (state, action) => {
         state.batches = state.batches.filter((batch) => batch._id !== action.payload);
       });
   },
 });
 
-export const { setSessionYear, setLocationId, setCourseId, setBatchName } = batchSlice.actions;
+export const { setSessionYear, setLocationId, setCourseId, setBatchName, clearStatus  } = batchSlice.actions;
 export default batchSlice.reducer;

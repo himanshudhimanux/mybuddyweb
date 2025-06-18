@@ -30,7 +30,7 @@ const AddLocation = () => {
       const newLocation = { name, instituteId };
       await dispatch(addLocation(newLocation));
       toast.success('Location added successfully');
-      navigate('/locations/list');
+      navigate('/location/list');
     } catch (error) {
       toast.error('Error adding location');
     } finally {
