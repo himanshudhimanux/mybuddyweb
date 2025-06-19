@@ -9,7 +9,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false); // ✅ Loading state
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -43,16 +43,18 @@ const Login = () => {
 
     if (!validateForm()) return;
 
-    setLoading(true); // ✅ Start loading
+    setLoading(true);
 
     try {
       const response = await api.post('/auth/login', { email, password });
       const { user, token, role } = response.data;
 
       localStorage.setItem('token', token);
-      dispatch(loginSuccess({ user, token, role }));
+      localStorage.setItem('user', JSON.stringify(user)); // ✅ FIXED: stringify user object
 
+      dispatch(loginSuccess({ user, token, role }));
       toast.success('Login Successful');
+
       switch (role) {
         case 'admin':
           navigate('/');
@@ -69,7 +71,7 @@ const Login = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || 'Something went wrong.');
     } finally {
-      setLoading(false); // ✅ Stop loading
+      setLoading(false);
     }
   };
 

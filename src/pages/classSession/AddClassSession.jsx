@@ -1,450 +1,304 @@
-import React, { useEffect, useState } from "react";
-import { fetchSubjects } from "../../redux/features/subject/subjectSlice";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Form, Button, Container, Row, Col } from 'react-bootstrap';
+import Select from 'react-select';
+import toast from 'react-hot-toast';
+
+import { fetchBatches } from '../../redux/features/batch/batchSlice';
+import { fetchTeachers } from '../../redux/features/teacher/teacherSlice';
+import { fetchSubjects } from '../../redux/features/subject/subjectSlice';
+import api from '../../utils/api';
 
 const AddClassSession = () => {
+  const dispatch = useDispatch();
 
-  const dispatch = useDispatch()
+  const { batches = [] } = useSelector((state) => state.batches);
+  const { data: teachers = [] } = useSelector((state) => state.teachers);
+  const { subjects = [] } = useSelector((state) => state.subjects);
 
-  // Fetch subjects from Redux store
-  const { subjects, loading: subjectsLoading, error: subjectsError } = useSelector((state) => state.subjects);
-
-  const [sessionType, setSessionType] = useState("Single");
   const [formData, setFormData] = useState({
-    batchClassId: "",
-    batchDate: "",
-    status: "Active",
-    classType: "Regular",
-    sessionMode: "Online",
-    subjectId: "",
-    teacherId: "",
+    batchId: '',
+    batchDate: '', // ✅ Added batchDate
+    status: 'Active',
+    classType: 'Regular',
+    sessionMode: 'Online',
+    subjectId: '',
+    teacherId: '',
+    sessionType: 'Single',
+    startDate: '',
+    endDate: '',
+    startTime: '',
+    endTime: '',
+    weeklyDays: [],
+    repeatEvery: 1,
+    onDay: '',
+    onThe: '',
+    roomNo: '',
     absentNotification: false,
     presentNotification: false,
-    scheduleDetails: {
-      startDate: "",
-      endDate: "",
-      startTime: "",
-      endTime: "",
-      weeklyDays: [],
-      repeatEvery: 1,
-      onDay: "",
-      onThe: "",
-    },
+    createdBy: '',
   });
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleScheduleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      scheduleDetails: {
-        ...prev.scheduleDetails,
-        [name]: value,
-      },
-    }));
-  };
-
-  const handleCheckboxChange = (e) => {
-    const { name, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: checked,
-    }));
-  };
-
-  const handleWeeklyDaysChange = (e) => {
-    const { value, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      scheduleDetails: {
-        ...prev.scheduleDetails,
-        weeklyDays: checked
-          ? [...prev.scheduleDetails.weeklyDays, value]
-          : prev.scheduleDetails.weeklyDays.filter((day) => day !== value),
-      },
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form Data Submitted: ", formData);
-    // You can send formData to the backend here
-  };
-
-
   useEffect(() => {
-    if (!subjects || subjects.length === 0) {
-      dispatch(fetchSubjects()); // Dispatch the fetchSubjects action if subjects are not available
+    dispatch(fetchBatches());
+    dispatch(fetchTeachers());
+    dispatch(fetchSubjects());
+  }, [dispatch]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const loggedInUser = JSON.parse(localStorage.getItem('user'));
+    const createdBy = loggedInUser?.id;
+
+    if (!createdBy) {
+      toast.error("User not found. Please login again.");
+      return;
     }
-  }, [dispatch, subjects]);
+
+    const scheduleDetails = {
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      weeklyDays: formData.weeklyDays,
+      repeatEvery: formData.repeatEvery,
+      onDay: formData.onDay,
+      onThe: formData.onThe,
+    };
+
+    const payload = {
+      ...formData,
+      createdBy, // ✅ Set the user's ID here
+      scheduleDetails,
+    };
+
+    try {
+      await api.post('/create-session', payload);
+      toast.success('Session created successfully!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Error creating session');
+    }
+  };
+
 
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-white shadow-md rounded-lg">
-      <h2 className="text-2xl font-bold mb-6">Create Session</h2>
-      <form onSubmit={handleSubmit}>
+    <Container className="mt-5">
+      <h3 className="mb-4">Create Class Session</h3>
+      <Form onSubmit={handleSubmit}>
+        <Form.Group className="mb-3">
+          <Form.Label>Batch</Form.Label>
+          <Form.Select name="batchId" value={formData.batchId} onChange={handleChange} required>
+            <option value="">Select Batch</option>
+            {batches.map((batch) => (
+              <option key={batch._id} value={batch._id}>
+                {batch.name}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
 
-
-        {/* Batch Class ID */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">Batch Class ID</label>
-          <input
-            type="text"
-            name="batchClassId"
-            className="w-full border rounded-lg px-3 py-2"
-            value={formData.batchClassId}
-            onChange={handleInputChange}
-          />
-        </div>
-
-        {/* Batch Date */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">Batch Date</label>
-          <input
+        {/* ✅ Batch Date Field */}
+        <Form.Group className="mb-3">
+          <Form.Label>Batch Date</Form.Label>
+          <Form.Control
             type="date"
             name="batchDate"
-            className="w-full border rounded-lg px-3 py-2"
             value={formData.batchDate}
-            onChange={handleInputChange}
+            onChange={handleChange}
+            required
           />
-        </div>
+        </Form.Group>
 
-        {/* Status */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">Status</label>
-          <select
-            name="status"
-            className="w-full border rounded-lg px-3 py-2"
-            value={formData.status}
-            onChange={handleInputChange}
-          >
-            <option value="Active">Active</option>
-            <option value="Holidays - Calendar">Holidays - Calendar</option>
-            <option value="Holidays - Batch">Holidays - Batch</option>
-            <option value="Cancelled">Cancelled</option>
-          </select>
-        </div>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Status</Form.Label>
+              <Form.Select name="status" value={formData.status} onChange={handleChange}>
+                <option value="Active">Active</option>
+                <option value="Holidays - Calendar">Holidays - Calendar</option>
+                <option value="Holidays - Batch">Holidays - Batch</option>
+                <option value="Cancelled">Cancelled</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Class Type</Form.Label>
+              <Form.Select name="classType" value={formData.classType} onChange={handleChange}>
+                <option value="Regular">Regular</option>
+                <option value="Exam">Exam</option>
+                <option value="Revision">Revision</option>
+                <option value="Guest Lecture">Guest Lecture</option>
+                <option value="Other">Other</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+        </Row>
 
-        {/* Class Type */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">Class Type</label>
-          <select
-            name="classType"
-            className="w-full border rounded-lg px-3 py-2"
-            value={formData.classType}
-            onChange={handleInputChange}
-          >
-            <option value="Regular">Regular</option>
-            <option value="Exam">Exam</option>
-            <option value="Revision">Revision</option>
-            <option value="Guest Lecture">Guest Lecture</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Session Mode</Form.Label>
+              <Form.Select name="sessionMode" value={formData.sessionMode} onChange={handleChange}>
+                <option value="Online">Online</option>
+                <option value="Offline">Offline</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Session Type</Form.Label>
+              <Form.Select name="sessionType" value={formData.sessionType} onChange={handleChange}>
+                <option value="Single">Single</option>
+                <option value="Every Day">Every Day</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Monthly">Monthly</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+        </Row>
 
-        {/* Session Mode */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">Session Mode</label>
-          <select
-            name="sessionMode"
-            className="w-full border rounded-lg px-3 py-2"
-            value={formData.sessionMode}
-            onChange={handleInputChange}
-          >
-            <option value="Online">Online</option>
-            <option value="Offline">Offline</option>
-          </select>
-        </div>
-
-        {/* Subject */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">Subject</label>
-          <input
-            type="text"
-            name="subjectId"
-            className="w-full border rounded-lg px-3 py-2"
-            placeholder="Enter Subject ID"
-            value={formData.subjectId}
-            onChange={handleInputChange}
+        {/* ✅ Searchable Subject */}
+        <Form.Group className="mb-3">
+          <Form.Label>Subject</Form.Label>
+          <Select
+            options={subjects.map((s) => ({ label: s.name, value: s._id }))}
+            value={subjects.find((s) => s._id === formData.subjectId)
+              ? {
+                label: subjects.find((s) => s._id === formData.subjectId).name,
+                value: formData.subjectId,
+              }
+              : null}
+            onChange={(selected) =>
+              setFormData((prev) => ({ ...prev, subjectId: selected?.value || '' }))
+            }
+            placeholder="Select Subject"
+            isClearable
           />
-        </div>
+        </Form.Group>
 
-        {/* Teacher */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">Teacher</label>
-          <input
-            type="text"
-            name="teacherId"
-            className="w-full border rounded-lg px-3 py-2"
-            placeholder="Enter Teacher ID"
-            value={formData.teacherId}
-            onChange={handleInputChange}
+        {/* ✅ Searchable Teacher */}
+        <Form.Group className="mb-3">
+          <Form.Label>Teacher</Form.Label>
+          <Select
+            options={teachers.map((t) => ({ label: t.name, value: t._id }))}
+            value={teachers.find((t) => t._id === formData.teacherId)
+              ? {
+                label: teachers.find((t) => t._id === formData.teacherId).name,
+                value: formData.teacherId,
+              }
+              : null}
+            onChange={(selected) =>
+              setFormData((prev) => ({ ...prev, teacherId: selected?.value || '' }))
+            }
+            placeholder="Select Teacher"
+            isClearable
           />
-        </div>
+        </Form.Group>
 
-        {/* Session Type */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-2">Session Type</label>
-          <select
-            name="sessionType"
-            className="w-full border rounded-lg px-3 py-2"
-            value={sessionType}
-            onChange={(e) => setSessionType(e.target.value)}
-          >
-            <option value="Single">Single</option>
-            <option value="Every Day">Every Day</option>
-            <option value="Weekly">Weekly</option>
-            <option value="Monthly">Monthly</option>
-          </select>
-        </div>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Start Date</Form.Label>
+              <Form.Control type="date" name="startDate" value={formData.startDate} onChange={handleChange} required />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>End Date</Form.Label>
+              <Form.Control type="date" name="endDate" value={formData.endDate} onChange={handleChange} required />
+            </Form.Group>
+          </Col>
+        </Row>
 
-        {/* Session Details Based on Type */}
-        {sessionType === "Single" && (
-          <div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Start Date</label>
-              <input
-                type="date"
-                name="startDate"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.startDate}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">End Date</label>
-              <input
-                type="date"
-                name="endDate"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.endDate}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Start Time</label>
-              <input
-                type="time"
-                name="startTime"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.startTime}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">End Time</label>
-              <input
-                type="time"
-                name="endTime"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.endTime}
-                onChange={handleScheduleChange}
-              />
-            </div>
-          </div>
+        <Row>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>Start Time</Form.Label>
+              <Form.Control type="time" name="startTime" value={formData.startTime} onChange={handleChange} required />
+            </Form.Group>
+          </Col>
+          <Col md={6}>
+            <Form.Group className="mb-3">
+              <Form.Label>End Time</Form.Label>
+              <Form.Control type="time" name="endTime" value={formData.endTime} onChange={handleChange} required />
+            </Form.Group>
+          </Col>
+        </Row>
+
+        {formData.sessionType === 'Weekly' && (
+          <Form.Group className="mb-3">
+            <Form.Label>Weekly Days (comma separated)</Form.Label>
+            <Form.Control
+              type="text"
+              name="weeklyDays"
+              placeholder="Monday,Wednesday"
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  weeklyDays: e.target.value.split(',').map((d) => d.trim()),
+                }))
+              }
+            />
+          </Form.Group>
         )}
 
-        {sessionType === "Every Day" && (
-          <div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Start Date</label>
-              <input
-                type="date"
-                name="startDate"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.startDate}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">End Date</label>
-              <input
-                type="date"
-                name="endDate"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.endDate}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Start Time</label>
-              <input
-                type="time"
-                name="startTime"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.startTime}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">End Time</label>
-              <input
-                type="time"
-                name="endTime"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.endTime}
-                onChange={handleScheduleChange}
-              />
-            </div>
-          </div>
+        {formData.sessionType === 'Monthly' && (
+          <Row>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>On Day (1–31)</Form.Label>
+                <Form.Control type="number" name="onDay" value={formData.onDay} onChange={handleChange} />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>On The (e.g. First, Second)</Form.Label>
+                <Form.Control type="text" name="onThe" value={formData.onThe} onChange={handleChange} />
+              </Form.Group>
+            </Col>
+          </Row>
         )}
 
-        {sessionType === "Weekly" && (
-          <div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Start Date</label>
-              <input
-                type="date"
-                name="startDate"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.startDate}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">End Date</label>
-              <input
-                type="date"
-                name="endDate"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.endDate}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Repeat Every (Weeks)</label>
-              <input
-                type="number"
-                name="repeatEvery"
-                className="w-full border rounded-lg px-3 py-2"
-                min="1"
-                value={formData.scheduleDetails.repeatEvery}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Days of the Week</label>
-              {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map(
-                (day) => (
-                  <div key={day} className="flex items-center mb-2">
-                    <input
-                      type="checkbox"
-                      name="weeklyDays"
-                      value={day}
-                      checked={formData.scheduleDetails.weeklyDays.includes(day)}
-                      onChange={handleWeeklyDaysChange}
-                    />
-                    <label className="ml-2 text-gray-700">{day}</label>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        )}
+        <Form.Group className="mb-3">
+          <Form.Label>Room No</Form.Label>
+          <Form.Control type="text" name="roomNo" value={formData.roomNo} onChange={handleChange} />
+        </Form.Group>
 
-        {sessionType === "Monthly" && (
-          <div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Start Date</label>
-              <input
-                type="date"
-                name="startDate"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.startDate}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">End Date</label>
-              <input
-                type="date"
-                name="endDate"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.endDate}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Repeat Every (Months)</label>
-              <input
-                type="number"
-                name="repeatEvery"
-                className="w-full border rounded-lg px-3 py-2"
-                min="1"
-                value={formData.scheduleDetails.repeatEvery}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">On Day</label>
-              <input
-                type="number"
-                name="onDay"
-                className="w-full border rounded-lg px-3 py-2"
-                min="1"
-                max="31"
-                value={formData.scheduleDetails.onDay}
-                onChange={handleScheduleChange}
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">On the</label>
-              <select
-                name="onThe"
-                className="w-full border rounded-lg px-3 py-2"
-                value={formData.scheduleDetails.onThe}
-                onChange={handleScheduleChange}
-              >
-                <option value="First">First</option>
-                <option value="Second">Second</option>
-                <option value="Third">Third</option>
-                <option value="Fourth">Fourth</option>
-                <option value="Last">Last</option>
-              </select>
-            </div>
-          </div>
-        )}
+        <Form.Check
+          type="checkbox"
+          label="Absent Notification"
+          name="absentNotification"
+          checked={formData.absentNotification}
+          onChange={handleChange}
+          className="mb-2"
+        />
 
+        <Form.Check
+          type="checkbox"
+          label="Present Notification"
+          name="presentNotification"
+          checked={formData.presentNotification}
+          onChange={handleChange}
+          className="mb-3"
+        />
 
-        {/* Absent Notification */}
-        <div className="mb-4 flex items-center">
-          <input
-            type="checkbox"
-            name="absentNotification"
-            checked={formData.absentNotification}
-            onChange={handleCheckboxChange}
-          />
-          <label className="ml-2 text-gray-700">Send Absent Notification</label>
-        </div>
-
-        {/* Present Notification */}
-        <div className="mb-4 flex items-center">
-          <input
-            type="checkbox"
-            name="presentNotification"
-            checked={formData.presentNotification}
-            onChange={handleCheckboxChange}
-          />
-          <label className="ml-2 text-gray-700">Send Present Notification</label>
-        </div>
-
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600"
-          >
-            Submit
-          </button>
-        </div>
-      </form>
-    </div>
+        <Button type="submit" variant="primary">
+          Create Session
+        </Button>
+      </Form>
+    </Container>
   );
 };
 
