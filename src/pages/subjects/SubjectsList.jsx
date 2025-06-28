@@ -58,13 +58,6 @@ const SubjectsList = () => {
       sortable: true,
     },
     {
-      name: 'Faculty/Teachers',
-      selector: (row) => {
-        if (!Array.isArray(row.FacultyId)) return 'N/A';
-        return row.FacultyId.map((faculty) => faculty?.name || 'Unknown').join(', ');
-      },
-    },
-    {
       name: 'Actions',
       cell: (row) => (
 
